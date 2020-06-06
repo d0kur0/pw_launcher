@@ -4,11 +4,13 @@ import commonjs from "@rollup/plugin-commonjs";
 import livereload from "rollup-plugin-livereload";
 import { terser } from "rollup-plugin-terser";
 import autoPreprocess from "svelte-preprocess";
+import rootImport from "rollup-plugin-root-import";
+import nodePolyfills from "rollup-plugin-node-polyfills";
 
 const production = !process.env.ROLLUP_WATCH;
 
 export default {
-  input: "src/svelte.js",
+  input: "src/rendererProcess/index.js",
   output: {
     sourcemap: true,
     format: "iife",
@@ -16,6 +18,15 @@ export default {
     file: "public/build/bundle.js",
   },
   plugins: [
+    nodePolyfills(),
+    rootImport({
+      // Will first look in `client/src/*` and then `common/src/*`.
+      root: `${__dirname}/src/rendererProcess`,
+      useInput: "prepend",
+
+      // If we don't find the file verbatim, try adding these extensions
+      extensions: [".js", ".svelte", ".css", ".html"],
+    }),
     svelte({
       preprocess: autoPreprocess({
         /* options */
@@ -24,7 +35,7 @@ export default {
       dev: !production,
       // we'll extract any component CSS out into
       // a separate file - better for performance
-      css: (css) => {
+      css: css => {
         css.write("public/build/bundle.css");
       },
     }),
